@@ -3,7 +3,6 @@ import (
     "encoding/json"
     "encoding/xml"
     "errors"
-    "fmt"
 )
 
 type MediaType interface {
@@ -32,7 +31,6 @@ func (j JSON) String() string {
 }
 
 func (j JSON) Unmarshal(body []byte, entity interface{}) error {
-    fmt.Printf("Unmarshal JSON: %s", string(body))
     err := json.Unmarshal(body, entity)
     if err != nil { return err }
     return nil
