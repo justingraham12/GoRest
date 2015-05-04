@@ -49,13 +49,14 @@ func TestHeader(t *testing.T) {
 
 func TestGetJSON(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+        w.Header().Add("Content-Type", ApplicationJSON.String())
         fmt.Fprintln(w, `{"name":"test"}`)
     }))
     defer server.Close()
 
     response := new(TestResponse)
     err := MakeClient(server.URL).Get(response)
-    if err != nil { t.Error(err) }
+    if err != nil { t.Error(err); return }
 
     if expected := response.Name; expected != "test" {
         t.Error(equalsMsg(expected, "test"))
@@ -64,6 +65,7 @@ func TestGetJSON(t *testing.T) {
 
 func TestGetXML(t *testing.T) {
     server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+        w.Header().Add("Content-Type", ApplicationXML.String())
         fmt.Fprintln(w,
         `<?xml version="1.0" encoding="UTF-8" ?>
         <Response>
@@ -76,11 +78,25 @@ func TestGetXML(t *testing.T) {
     err := MakeClient(server.URL).
         Accept(ApplicationXML).
         Get(response)
-    if err != nil { t.Error(err) }
+    if err != nil { t.Error(err); return }
 
     if expected := response.Name; expected != "test" {
         t.Error(equalsMsg(expected, "test"))
     }
+}
+
+func TestInvalidContentType(t *testing.T) {
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+        w.Header().Add("Content-Type", ApplicationJSON.String())
+        fmt.Fprintln(w, `{"name":"test"}`)
+    }))
+    defer server.Close()
+
+    response := new(TestResponse)
+    err := MakeClient(server.URL).
+        Accept(ApplicationXML). // Set accept XML
+        Get(response)
+    if err == nil { t.Error("Expected Error due to Response Content-Type not matching Request Accept type") }
 }
 
 // ===================================================================

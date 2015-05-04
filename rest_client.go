@@ -6,6 +6,7 @@ import (
     u "net/url"
     "io/ioutil"
     "bytes"
+    "errors"
 )
 
 type RestClient struct {
@@ -14,6 +15,7 @@ type RestClient struct {
     accept      MediaType
     contentType MediaType
     headers     map[string]string
+    query       map[string]string
     cookies     []*http.Cookie
 }
 
@@ -31,18 +33,21 @@ func MakeClient(baseUrl string) RestClient {
             ApplicationJSON,
             ApplicationJSON,
             make(map[string]string),
+            make(map[string]string),
             nil)
 }
 
 // Private constructor used to provide all RestClient parameters
 func newClient(client *http.Client, url string, accept MediaType, contentType MediaType, headers map[string]string,
-cookies []*http.Cookie) RestClient {
+query map[string]string, cookies []*http.Cookie) RestClient {
     return RestClient{
-        client: client,
-        url: url,
-        accept: accept,
-        contentType: contentType,
-        headers: headers}
+        client:         client,
+        url:            url,
+        accept:         accept,
+        contentType:    contentType,
+        headers:        headers,
+        query:          query,
+        cookies:        cookies}
 }
 
 // ===================================================================
@@ -70,31 +75,35 @@ func (rc RestClient) GetHeaders() map[string]string {
 // ===================================================================
 
 func (rc RestClient) Accept(accept MediaType) RestClient {
-    return newClient(rc.client, rc.url, accept, rc.contentType, rc.headers, rc.cookies)
+    return newClient(rc.client, rc.url, accept, rc.contentType, rc.headers, rc.query, rc.cookies)
 }
 
 func (rc RestClient) ContentType(contentType MediaType) RestClient {
-    return newClient(rc.client, rc.url, rc.accept, contentType, rc.headers, rc.cookies)
+    return newClient(rc.client, rc.url, rc.accept, contentType, rc.headers, rc.query, rc.cookies)
 }
 
 func (rc RestClient) Path(path ...string) RestClient {
-    newClient := newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, rc.cookies)
+    newClient := newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, rc.query, rc.cookies)
     for _, p := range path { newClient.url = fmt.Sprintf("%s/%s", newClient.url, strings.Trim(p, "/")) }
     return newClient
 }
 
-func (rc RestClient) Query(key, value string) {
+func (rc RestClient) Query(key, value string) RestClient {
+    newQuery := make(map[string]string)
+    for k, v := range rc.headers { newQuery[k] = v }
+    newQuery[key] = value
+    return newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, newQuery, rc.cookies)
 }
 
 func (rc RestClient) Header(key, value string) RestClient {
     newHeaders := make(map[string]string)
     for k, v := range rc.headers { newHeaders[k] = v }
     newHeaders[key] = value
-    return newClient(rc.client, rc.url, rc.accept, rc.contentType, newHeaders, rc.cookies)
+    return newClient(rc.client, rc.url, rc.accept, rc.contentType, newHeaders, rc.query, rc.cookies)
 }
 
 func (rc RestClient) Cookie(cookie *http.Cookie) RestClient {
-    return newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, append(rc.cookies, cookie))
+    return newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, rc.query, append(rc.cookies, cookie))
 }
 
 func (rc RestClient) Get(resEntity ...interface{}) error {
@@ -117,18 +126,19 @@ func (rc RestClient) Delete(entity ...interface{}) error {
 // the provided resEntity
 func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interface{}) error {
     // Validate the URL
-    if _, err := u.Parse(rc.url); err != nil { return err }
+    uri, err := u.Parse(rc.url);
+    if err != nil { return err }
 
-    var (
-        req *http.Request
-        err error
-    )
+    // Add query params
+    for k, v := range rc.query { uri.Query().Add(k, v) }
+
+    var req *http.Request
 
     // Build the Request
     if reqBody != nil {
-        req, err = http.NewRequest(httpReq, rc.url, bytes.NewBuffer(reqBody))
+        req, err = http.NewRequest(httpReq, uri.String(), bytes.NewBuffer(reqBody))
     } else {
-        req, err = http.NewRequest(httpReq, rc.url, nil)
+        req, err = http.NewRequest(httpReq, uri.String(), nil)
     }
     if err != nil { return err }
 
@@ -139,6 +149,14 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
     // Make Request
     res, err := rc.client.Do(req)
     if err != nil { return err }
+
+    // Validate the response content type matches the accept type.
+    // This is required to allow unmarshalling to the resEntity
+    if contentType := res.Header.Get("Content-Type"); len(resEntity) != 0 &&
+    !strings.Contains(strings.ToLower(contentType), strings.ToLower(rc.accept.String())) {
+        return errors.New(fmt.Sprintf("Expected Response Content-Type [%s] to match/contain Request Accept [%s]",
+        contentType, rc.accept.String()))
+    }
 
     body, err := ioutil.ReadAll(res.Body)
     if err != nil { return err }

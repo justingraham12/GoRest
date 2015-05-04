@@ -1,51 +1,88 @@
 # GoRest
 An immutable rest client for Go
 
-Example:
+A quick sample using the GoRest RestClient:
 
     package main
     import (
         "github.com/Falkenfighter/GoRest"
         "fmt"
+        "encoding/json"
     )
     
-    type TwitterTerms struct {
-        Terms string `json:"tos"`
+    // Wrapper for events
+    type Events []Event
+    
+    // The Base response object from /events
+    type Event struct {
+        Type        string          `json:"type"`
+        Public      bool            `json:"public"`
+        Payload     interface{}     `json:"payload"`
+        Repo        Repository      `json:"repo"`
+        Actor       User            `json:"actor"`
+        Org         Organization    `json:"org"`
+        CreatedAt   string          `json:"created_at"`
+        Id          string          `json:"id"`
+    }
+    type Repository struct {
+        Id      int     `json:"id"`
+        Name    string  `json:"name"`
+        Url     string  `json:"url"`
     }
     
-    type TwitterErrors struct {
-        Errors []TwitterError `json:"errors"`
+    type User struct {
+        Id          int     `json:"id"`
+        Login       string  `json:"login"`
+        GravatarId  string  `json:"gravatar_id"`
+        AvatarUrl   string  `json:"avatar_url"`
+        Url         string  `json:"url"`
+    }
+    type Organization struct {
+        Id          int     `json:"id"`
+        Login       string  `json:"login"`
+        GravatarId  string  `json:"gravatar_id"`
+        AvatarUrl   string  `json:"avatar_url"`
+        Url         string  `json:"url"`
     }
     
-    type TwitterError struct {
-        Code    int `json:"code"`
-        Message string `json:"message"`
-    }
-    
-    func (te TwitterError) String() string {
-        return fmt.Sprintf("TwitterError{ Code=%v, Message=%s }", te.Code, te.Message)
-    }
+    // A new RestClient pointed at the base url. The Accept type has also been set as JSON
+    var Client GoRest.RestClient = GoRest.MakeClient("https://api.github.com/").Accept(GoRest.ApplicationJSON)
     
     func main() {
-        baseClient := GoRest.MakeClient("https://api.twitter.com/").Path("1.1")
+        // The events object to unmarshal the JSON response into
+        allEvents := new(Events)
     
-        // Create Help client
-        helpClient := baseClient.Path("help")
+        // Make the request and validate no error resulted.
+        if err := GetEvents(allEvents); err != nil { fmt.Println("Error getting events:", err); return }
     
-        // Create the pointer to our struct
-        twitterTOS := new(TwitterTerms)
-        twitterErrors := new(TwitterErrors)
+        // At this point the events struct has been populated with the response JSON
+        fmt.Println("First Event:", (*allEvents)[0], "\n\n")
     
-        // Finish the path and make a GET call on it.
-        // Note: JSON is the default accept type so we do not need to specify it
-        err := helpClient.Path("tos.json").Get(twitterTOS, twitterErrors)
-        if err != nil {
-            fmt.Println("Client Error:", err)
-        }
+        // Convert the struct into pretty printed JSON and log it out (used as an example to display the response)
+        str, err := json.MarshalIndent(allEvents, "", "\t")
+        if err != nil { fmt.Println(err); return }
+        fmt.Println("All Events:\n", string(str), "\n\n\n\n")
     
-        if len(twitterErrors.Errors) != 0 {
-            fmt.Println("Twitter Error:", twitterErrors.Errors[0])
-        }
     
-        fmt.Println(twitterTOS.Terms)
+        // The events for a particular user
+        usersEvents := new(Events)
+    
+        // Get my events
+        if err = GetUsersEvents("Falkenfighter", usersEvents);
+            err != nil { fmt.Println("Error getting Users events:",err); return }
+    
+        // Convert the struct into pretty printed JSON and log it out (used as an example to display the response)
+        str, err = json.MarshalIndent(usersEvents, "", "\t")
+        if err != nil { fmt.Println(err); return }
+        fmt.Println("Users Events:\n", string(str))
+    }
+    
+    // GET /events
+    func GetEvents(events *Events) error {
+        return Client.Path("events").Get(events)
+    }
+    
+    // GET /users/:username/events
+    func GetUsersEvents(username string, events *Events) error {
+        return Client.Path("users", username, "events").Get(events)
     }
