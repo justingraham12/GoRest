@@ -18,7 +18,7 @@ This takes the response body and unmarshals it into the provided struct. JSON is
 can be changed by providing a new MediaType.
 
     GoRest.MakeClient("base_url").Accept(GoRest.ApplicationXML)
-GoRest provides both XML and JSON unmarshalling. If you would like to customize the GoRest unmarshals or add a new type 
+GoRest provides both XML and JSON unmarshalling. If you would like to customize how GoRest unmarshals or add a new type 
 you can define a new MediaType. For example if I wanted to unmarshal YAML it would look like this:
 
     type YAML string
