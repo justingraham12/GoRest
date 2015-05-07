@@ -55,7 +55,7 @@ func TestGetJSON(t *testing.T) {
     defer server.Close()
 
     response := new(TestResponse)
-    err := MakeClient(server.URL).Get(response)
+    _, err := MakeClient(server.URL).Get(response)
     if err != nil { t.Error(err); return }
 
     if expected := response.Name; expected != "test" {
@@ -75,7 +75,7 @@ func TestGetXML(t *testing.T) {
     defer server.Close()
 
     response := new(TestResponse)
-    err := MakeClient(server.URL).
+    _, err := MakeClient(server.URL).
         Accept(ApplicationXML).
         Get(response)
     if err != nil { t.Error(err); return }
@@ -93,7 +93,7 @@ func TestInvalidContentType(t *testing.T) {
     defer server.Close()
 
     response := new(TestResponse)
-    err := MakeClient(server.URL).
+    _, err := MakeClient(server.URL).
         Accept(ApplicationXML). // Set accept XML
         Get(response)
     if err == nil { t.Error("Expected Error due to Response Content-Type not matching Request Accept type") }

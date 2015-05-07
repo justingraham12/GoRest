@@ -106,28 +106,27 @@ func (rc RestClient) Cookie(cookie *http.Cookie) RestClient {
     return newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, rc.query, append(rc.cookies, cookie))
 }
 
-func (rc RestClient) Get(resEntity ...interface{}) error {
+func (rc RestClient) Get(resEntity ...interface{}) (*http.Response, error) {
     return rc.request("GET", nil, resEntity...)
 }
 
-func (rc RestClient) Put(reqBody []byte, resEntity ...interface{}) error {
+func (rc RestClient) Put(reqBody []byte, resEntity ...interface{}) (*http.Response, error) {
     return rc.request("PUT", reqBody, resEntity...)
 }
 
-func (rc RestClient) Post(reqBody []byte, resEntity ...interface{}) error {
+func (rc RestClient) Post(reqBody []byte, resEntity ...interface{}) (*http.Response, error) {
     return rc.request("POST", reqBody, resEntity...)
 }
 
-func (rc RestClient) Delete(entity ...interface{}) error {
-    return nil
+func (rc RestClient) Delete(entity ...interface{}) (*http.Response, error) {
+    return nil, nil
 }
 
-// The main request function. This handles building out the request and reading the response into
-// the provided resEntity
-func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interface{}) error {
+// Handles building and executing the http request
+func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interface{}) (*http.Response, error) {
     // Validate the URL
     uri, err := u.Parse(rc.url);
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Add query params
     for k, v := range rc.query { uri.Query().Add(k, v) }
@@ -140,7 +139,7 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
     } else {
         req, err = http.NewRequest(httpReq, uri.String(), nil)
     }
-    if err != nil { return err }
+    if err != nil { return nil, err }
 
     // Add headers
     req.Header.Add("Accept", rc.accept.String())
@@ -148,24 +147,29 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
 
     // Make Request
     res, err := rc.client.Do(req)
-    if err != nil { return err }
+    if err != nil { return res, err }
 
+    return rc.response(res, resEntity...)
+}
+
+// Handles validating and reading the http response
+func (rc RestClient) response(res *http.Response, resEntity ...interface{}) (*http.Response, error) {
     // Validate the response content type matches the accept type.
     // This is required to allow unmarshalling to the resEntity
     if contentType := res.Header.Get("Content-Type"); len(resEntity) != 0 &&
     !strings.Contains(strings.ToLower(contentType), strings.ToLower(rc.accept.String())) {
-        return errors.New(fmt.Sprintf("Expected Response Content-Type [%s] to match/contain Request Accept [%s]",
+        return res, errors.New(fmt.Sprintf("Expected Response Content-Type [%s] to match/contain Request Accept [%s]",
         contentType, rc.accept.String()))
     }
 
     body, err := ioutil.ReadAll(res.Body)
-    if err != nil { return err }
+    if err != nil { return res, err }
 
     // If entities were passed in then unmarshal the body into each
     for _, e := range resEntity {
-        if err = rc.accept.Unmarshal(body, e); err != nil { return err }
+        if err = rc.accept.Unmarshal(body, e); err != nil { return res, err }
     }
 
     // Return success
-    return nil
+    return res, nil
 }

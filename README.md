@@ -1,88 +1,40 @@
 # GoRest
 An immutable rest client for Go
 
-A quick sample using the GoRest RestClient:
+GoRest provides a simple to use wrapper to Golang's net/http package. 
 
-    package main
-    import (
-        "github.com/Falkenfighter/GoRest"
-        "fmt"
-        "encoding/json"
-    )
+# Feature set:
+
+1) __Fluent URL Path Building__
+
+    GoRest.MakeClient("base_url").Path("param_1", "param_2").Query("key", "value")  
+This would build the url: `base_url/param_1/param_2?key=value`  
+
+2) __Response Unmarshalling__
+
+    responseStruct = new(ResponseStruct)
+    res, err := GoRest.MakeClient("base_url").Get(responseStruct)  
+This takes the response body and unmarshals it into the provided struct. JSON is set as the default unmarshaller but 
+can be changed by providing a new MediaType.
+
+    GoRest.MakeClient("base_url").Accept(GoRest.ApplicationXML)
+GoRest provides both XML and JSON unmarshalling. If you would like to customize the GoRest unmarshals or add a new type 
+you can define a new MediaType. For example if I wanted to unmarshal YAML it would look like this:
+
+    type YAML string
+    var ApplicationYAML = "application/yaml"
     
-    // Wrapper for events
-    type Events []Event
-    
-    // The Base response object from /events
-    type Event struct {
-        Type        string          `json:"type"`
-        Public      bool            `json:"public"`
-        Payload     interface{}     `json:"payload"`
-        Repo        Repository      `json:"repo"`
-        Actor       User            `json:"actor"`
-        Org         Organization    `json:"org"`
-        CreatedAt   string          `json:"created_at"`
-        Id          string          `json:"id"`
-    }
-    type Repository struct {
-        Id      int     `json:"id"`
-        Name    string  `json:"name"`
-        Url     string  `json:"url"`
+    func (y YAML) String() string {
+        return string(y)
     }
     
-    type User struct {
-        Id          int     `json:"id"`
-        Login       string  `json:"login"`
-        GravatarId  string  `json:"gravatar_id"`
-        AvatarUrl   string  `json:"avatar_url"`
-        Url         string  `json:"url"`
-    }
-    type Organization struct {
-        Id          int     `json:"id"`
-        Login       string  `json:"login"`
-        GravatarId  string  `json:"gravatar_id"`
-        AvatarUrl   string  `json:"avatar_url"`
-        Url         string  `json:"url"`
-    }
+    func (y YAML) Unmarshal(body []byte, entity interface{}) error {
+        // Unmarshal logic goes here converting the body variable into the entity variable
+    }  
     
-    // A new RestClient pointed at the base url. The Accept type has also been set as JSON
-    var Client GoRest.RestClient = GoRest.MakeClient("https://api.github.com/").Accept(GoRest.ApplicationJSON)
+Then to use the new type you provide it to the Accept() function
+
+    GoRest.MakeClient("base_url").Accept(ApplicationYAML)
     
-    func main() {
-        // The events object to unmarshal the JSON response into
-        allEvents := new(Events)
-    
-        // Make the request and validate no error resulted.
-        if err := GetEvents(allEvents); err != nil { fmt.Println("Error getting events:", err); return }
-    
-        // At this point the events struct has been populated with the response JSON
-        fmt.Println("First Event:", (*allEvents)[0], "\n\n")
-    
-        // Convert the struct into pretty printed JSON and log it out (used as an example to display the response)
-        str, err := json.MarshalIndent(allEvents, "", "\t")
-        if err != nil { fmt.Println(err); return }
-        fmt.Println("All Events:\n", string(str), "\n\n\n\n")
-    
-    
-        // The events for a particular user
-        usersEvents := new(Events)
-    
-        // Get my events
-        if err = GetUsersEvents("Falkenfighter", usersEvents);
-            err != nil { fmt.Println("Error getting Users events:",err); return }
-    
-        // Convert the struct into pretty printed JSON and log it out (used as an example to display the response)
-        str, err = json.MarshalIndent(usersEvents, "", "\t")
-        if err != nil { fmt.Println(err); return }
-        fmt.Println("Users Events:\n", string(str))
-    }
-    
-    // GET /events
-    func GetEvents(events *Events) error {
-        return Client.Path("events").Get(events)
-    }
-    
-    // GET /users/:username/events
-    func GetUsersEvents(username string, events *Events) error {
-        return Client.Path("users", username, "events").Get(events)
-    }
+__NOTE:__ GoRest validates the Response "Content-Type" contains the Accept type. So in our example the "Content-Type"
+ MUST contain "application/yaml"
