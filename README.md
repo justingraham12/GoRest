@@ -1,6 +1,5 @@
-[![Build Status](https://travis-ci.org/Falkenfighter/GoRest.svg?branch=master)](https://travis-ci.org/Falkenfighter/GoRest)  
-
 # GoRest
+[![Build Status](https://travis-ci.org/Falkenfighter/GoRest.svg?branch=master)](https://travis-ci.org/Falkenfighter/GoRest)  
 An immutable rest client for Go
 
 GoRest provides a simple to use wrapper to Golang's net/http package. 
