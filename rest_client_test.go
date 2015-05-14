@@ -1,11 +1,13 @@
 package GoRest
+
 import (
-    "testing"
-    "fmt"
-    "strings"
-    "net/http/httptest"
-    "net/http"
-    "reflect"
+	u "./utils"
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 )
 
 const uri = "http://www.google.com/"
@@ -13,108 +15,71 @@ const uri = "http://www.google.com/"
 var client RestClient
 
 func TestMakeClient(t *testing.T) {
-    client = MakeClient(uri)
-    if strings.Trim(uri, "/") != client.url {
-        t.Error(equalsMsg(uri, client.url))
-    }
+	client = MakeClient(uri)
+	assert.Equal(t, strings.Trim(uri, "/"), client.url)
 }
 
 func TestGetURL(t *testing.T) {
-    if client.url != client.GetURL() {
-        t.Error(equalsMsg(client.url, client.GetURL()))
-    }
+	assert.Equal(t, client.url, client.GetURL())
 }
 
 func TestGetAccept(t *testing.T) {
-    if expected := client.GetAccept(); expected != ApplicationJSON {
-        t.Error(equalsMsg(expected, ApplicationJSON))
-    }
+	assert.Equal(t, client.GetAccept(), ApplicationJSON)
 }
 
 func TestPath(t *testing.T) {
-    newClient := client.Path("1", "/2", "/3/")
-    if expected := fmt.Sprintf("%s1/2/3", uri); expected != newClient.url {
-        t.Error(equalsMsg(expected, newClient.url))
-    }
+	assert.Equal(t, fmt.Sprintf("%s1/2/3", uri), client.Path("1", "/2", "/3/").url)
 }
 
 func TestHeader(t *testing.T) {
-    newClient := client.Header("key", "value")
-    expected := map[string]string{"key":"value"}
-    actual := newClient.GetHeaders()
-    if !reflect.DeepEqual(expected, actual) {
-        t.Error(equalsMsg(expected, actual))
-    }
+	assert.Equal(t, map[string]string{"key": "value"}, client.Header("key", "value").GetHeaders())
 }
 
 func TestGetJSON(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-        w.Header().Add("Content-Type", ApplicationJSON.String())
-        fmt.Fprintln(w, `{"name":"test"}`)
-    }))
-    defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", ApplicationJSON.String())
+		fmt.Fprintln(w, `{"name":"test"}`)
+	}))
+	defer server.Close()
 
-    response := new(TestResponse)
-    _, err := MakeClient(server.URL).Get(response)
-    if err != nil { t.Error(err); return }
+	response := new(u.TestResponse)
+	_, err := MakeClient(server.URL).Get(response)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-    if expected := response.Name; expected != "test" {
-        t.Error(equalsMsg(expected, "test"))
-    }
+	assert.Equal(t, "test", response.Name)
 }
 
 func TestGetXML(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-        w.Header().Add("Content-Type", ApplicationXML.String())
-        fmt.Fprintln(w,
-        `<?xml version="1.0" encoding="UTF-8" ?>
-        <Response>
-            <name>test</name>
-        </Response>`)
-    }))
-    defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", ApplicationXML.String())
+		fmt.Fprintln(w, `<Response><name>test</name></Response>`)
+	}))
+	defer server.Close()
 
-    response := new(TestResponse)
-    _, err := MakeClient(server.URL).
-        Accept(ApplicationXML).
-        Get(response)
-    if err != nil { t.Error(err); return }
+	response := new(u.TestResponse)
+	_, err := MakeClient(server.URL).
+		Accept(ApplicationXML).
+		Get(response)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-    if expected := response.Name; expected != "test" {
-        t.Error(equalsMsg(expected, "test"))
-    }
+	assert.Equal(t, "test", response.Name)
 }
 
 func TestInvalidContentType(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-        w.Header().Add("Content-Type", ApplicationJSON.String())
-        fmt.Fprintln(w, `{"name":"test"}`)
-    }))
-    defer server.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", ApplicationJSON.String()) // Set Content-Type JSON
+		fmt.Fprintln(w, `{"name":"test"}`)
+	}))
+	defer server.Close()
 
-    response := new(TestResponse)
-    _, err := MakeClient(server.URL).
-        Accept(ApplicationXML). // Set accept XML
-        Get(response)
-    if err == nil { t.Error("Expected Error due to Response Content-Type not matching Request Accept type") }
-}
-
-// ===================================================================
-//                             Test Utils
-// ===================================================================
-
-// Builds the error message for an equals query
-//
-// Output: Expected [exp_val] to equal [act_val]
-func equalsMsg(expected, actual interface{}) string {
-    return fmt.Sprintf("Expected [%s] to equal [%s]", expected, actual)
-}
-
-// A fake response object that will be used to unmarshal test data
-type TestResponse struct {
-    Name string `json:"name" xml:"name"`
-}
-
-func (tr TestResponse) String() string {
-    return fmt.Sprintf("TestResponse{ Name=%s }", tr.Name)
+	_, err := MakeClient(server.URL).
+		Accept(ApplicationXML). // Set accept type XML
+		Get(new(u.TestResponse))
+	assert.NotNil(t, err, "Expected Error due to Accept type not matching Content-Type")
 }
