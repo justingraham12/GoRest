@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Falkenfighter/GoRest.svg?branch=master)](https://travis-ci.org/Falkenfighter/GoRest)  
+
 # GoRest
 An immutable rest client for Go
 
