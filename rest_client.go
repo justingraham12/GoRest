@@ -158,6 +158,10 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
 	req.Header.Add("Accept", rc.accept.String())
 	req.Header.Add("Content-Type", rc.contentType.String())
 
+	for k, v := range rc.headers {
+		req.Header.Add(k, v)
+	}
+
 	// Make Request
 	res, err := rc.client.Do(req)
 	if err != nil {
