@@ -26,12 +26,21 @@ func TestJSONUnmarshal(t *testing.T) {
 	assert.Equal(t, "test", entity.Name)
 }
 
+func TestURLEncodedString(t *testing.T) {
+	assert.Equal(t, "application/x-www-form-urlencoded", ApplicationURLEncoded.String())
+}
+
+func TestURLEncodedUnmarshal(t *testing.T) {
+	err := ApplicationURLEncoded.Unmarshal([]byte(`Some Text`), new(u.TestResponse))
+	assert.NotNil(t, err)
+}
+
 func TestTextPlainString(t *testing.T) {
 	assert.Equal(t, "text/plain", TextPlain.String())
 }
 
 func TestTextPlainUnmarshal(t *testing.T) {
-	err := ApplicationJSON.Unmarshal([]byte(`Some Text`), new(u.TestResponse))
+	err := TextPlain.Unmarshal([]byte(`Some Text`), new(u.TestResponse))
 	assert.NotNil(t, err)
 }
 

@@ -13,14 +13,16 @@ type MediaType interface {
 
 type XML string
 type JSON string
+type URL_ENCODED string
 type TEXT_PLAIN string
 type TEXT_XML string
 
 const (
-	ApplicationXML  XML        = "application/xml"
-	ApplicationJSON JSON       = "application/json"
-	TextPlain       TEXT_PLAIN = "text/plain"
-	TextXML         TEXT_XML   = "text/xml"
+	ApplicationXML  		XML        	= "application/xml"
+	ApplicationJSON 		JSON       	= "application/json"
+	ApplicationURLEncoded 	URL_ENCODED = "application/x-www-form-urlencoded"
+	TextPlain       		TEXT_PLAIN 	= "text/plain"
+	TextXML         		TEXT_XML   	= "text/xml"
 )
 
 // JSON
@@ -50,6 +52,17 @@ func (x XML) Unmarshal(body []byte, entity interface{}) error {
 	}
 	return nil
 }
+
+// URL_ENCODED
+
+func(url URL_ENCODED) String() string {
+	return string(url)
+}
+
+func(url URL_ENCODED) Unmarshal(body []byte, entity interface{}) error {
+	return errors.New("Unable to unmarshal MediaType{URL_ENCODED}")
+}
+
 
 // TEXT_PLAIN
 
