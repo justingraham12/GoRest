@@ -56,10 +56,7 @@ func newClient(client *http.Client, url string, accept MediaType, contentType Me
 // ===================================================================
 
 func (rc RestClient) GetURL() string {
-	uri, err := u.Parse(rc.url)
-	if err != nil {
-		return err.Error()
-	}
+	uri, _ := u.Parse(rc.url)
 	for k, v := range rc.query {
 		uri.Query().Add(k, v)
 	}
@@ -120,29 +117,26 @@ func (rc RestClient) Cookie(cookie *http.Cookie) RestClient {
 	return newClient(rc.client, rc.url, rc.accept, rc.contentType, rc.headers, rc.query, append(rc.cookies, cookie))
 }
 
-func (rc RestClient) Get(resEntity ...interface{}) (*http.Response, error) {
-	return rc.request("GET", nil, resEntity...)
+func (rc RestClient) Get(entity ...interface{}) (*http.Response, error) {
+	return rc.request("GET", nil, entity...)
 }
 
-func (rc RestClient) Put(reqBody []byte, resEntity ...interface{}) (*http.Response, error) {
-	return rc.request("PUT", reqBody, resEntity...)
+func (rc RestClient) Put(reqBody []byte, entity ...interface{}) (*http.Response, error) {
+	return rc.request("PUT", reqBody, entity...)
 }
 
-func (rc RestClient) Post(reqBody []byte, resEntity ...interface{}) (*http.Response, error) {
-	return rc.request("POST", reqBody, resEntity...)
+func (rc RestClient) Post(reqBody []byte, entity ...interface{}) (*http.Response, error) {
+	return rc.request("POST", reqBody, entity...)
 }
 
 func (rc RestClient) Delete(entity ...interface{}) (*http.Response, error) {
-	return nil, nil
+	return rc.request("DELETE", nil, entity...)
 }
 
 // Handles building and executing the http request
 func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interface{}) (*http.Response, error) {
 	// Validate the URL
-	uri, err := u.Parse(rc.url)
-	if err != nil {
-		return nil, err
-	}
+	uri, _ := u.Parse(rc.url)
 
 	// Add query params
 	if len(rc.query) > 0 {
@@ -153,7 +147,10 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
 		uri.RawQuery = params.Encode()
 	}
 
-	var req *http.Request
+	var (
+		req *http.Request
+		err error
+	)
 
 	// Build the Request
 	if reqBody != nil {
@@ -197,13 +194,25 @@ func (rc RestClient) response(res *http.Response, resEntity ...interface{}) (*ht
 		return res, err
 	}
 
-	// If entities were passed in then unmarshal the body into each
-	for _, e := range resEntity {
-		if err = rc.accept.Unmarshal(body, e); err != nil {
-			return res, err
+	return res, rc.unmarshal(body, resEntity...)
+}
+
+// Tries converting the body into the provided entities. This function will only return an error
+// if it is unable to unmarshal to all provided entities.
+func (rc RestClient) unmarshal(body []byte, resEntity ...interface{}) error {
+	if len(resEntity) > 0 {
+		e := []error{}
+
+		for _, entity := range resEntity {
+			if err := rc.accept.Unmarshal(body, entity); err != nil {
+				e = append(e, err)
+			}
+		}
+
+		if len(e) == len(resEntity) {
+			return fmt.Errorf("Error during unmarshal: %v", e)
 		}
 	}
 
-	// Return success
-	return res, nil
+	return nil
 }

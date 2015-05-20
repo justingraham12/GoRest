@@ -11,7 +11,7 @@ func TestXMLString(t *testing.T) {
 }
 
 func TestXMLUnmarshal(t *testing.T) {
-	entity := new(u.TestResponse)
+	entity := new(u.TestResponse1)
 	ApplicationXML.Unmarshal([]byte(`<Response><name>test</name></Response>`), entity)
 	assert.Equal(t, "test", entity.Name)
 }
@@ -21,7 +21,7 @@ func TestJSONString(t *testing.T) {
 }
 
 func TestJSONUnmarshal(t *testing.T) {
-	entity := new(u.TestResponse)
+	entity := new(u.TestResponse1)
 	ApplicationJSON.Unmarshal([]byte(`{"name":"test"}`), entity)
 	assert.Equal(t, "test", entity.Name)
 }
@@ -31,7 +31,7 @@ func TestURLEncodedString(t *testing.T) {
 }
 
 func TestURLEncodedUnmarshal(t *testing.T) {
-	err := ApplicationURLEncoded.Unmarshal([]byte(`Some Text`), new(u.TestResponse))
+	err := ApplicationURLEncoded.Unmarshal([]byte(`Some Text`), new(u.TestResponse1))
 	assert.NotNil(t, err)
 }
 
@@ -40,7 +40,7 @@ func TestTextPlainString(t *testing.T) {
 }
 
 func TestTextPlainUnmarshal(t *testing.T) {
-	err := TextPlain.Unmarshal([]byte(`Some Text`), new(u.TestResponse))
+	err := TextPlain.Unmarshal([]byte(`Some Text`), new(u.TestResponse1))
 	assert.NotNil(t, err)
 }
 
@@ -49,7 +49,7 @@ func TestTextXMLString(t *testing.T) {
 }
 
 func TestTextXMLUnmarshal(t *testing.T) {
-	entity := new(u.TestResponse)
+	entity := new(u.TestResponse1)
 	TextXML.Unmarshal([]byte(`<Response><name>test</name></Response>`), entity)
 	assert.Equal(t, "test", entity.Name)
 }
