@@ -99,7 +99,7 @@ func (rc RestClient) Path(path ...string) RestClient {
 }
 
 func (rc RestClient) Query(key, value string) RestClient {
-	newQuery := make(map[string]string, len(rc.query) + 1)
+	newQuery := make(map[string]string, len(rc.query)+1)
 	for k, v := range rc.query {
 		newQuery[k] = v
 	}
@@ -198,19 +198,9 @@ func (rc RestClient) response(res *http.Response, resEntity ...interface{}) (*ht
 	}
 
 	// If entities were passed in then unmarshal the body into each
-	if len(resEntity) != 0 {
-		errs := []string{}
-		success := false // If 1 entity is able to unmarshal consider it successful
-		for _, e := range resEntity {
-			if err = rc.accept.Unmarshal(body, e); err != nil {
-				errs = append(errs, err.Error())
-			} else {
-				success = true
-				break // Unmarshal was successful
-			}
-		}
-		if len(errs) != 0 && !success {
-			return res, fmt.Errorf("Error during unmarshal: %v", errs)
+	for _, e := range resEntity {
+		if err = rc.accept.Unmarshal(body, e); err != nil {
+			return res, err
 		}
 	}
 
