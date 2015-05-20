@@ -100,7 +100,7 @@ func (rc RestClient) Path(path ...string) RestClient {
 
 func (rc RestClient) Query(key, value string) RestClient {
 	newQuery := make(map[string]string)
-	for k, v := range rc.headers {
+	for k, v := range rc.query {
 		newQuery[k] = v
 	}
 	newQuery[key] = value
