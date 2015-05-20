@@ -57,8 +57,12 @@ func newClient(client *http.Client, url string, accept MediaType, contentType Me
 
 func (rc RestClient) GetURL() string {
 	uri, _ := u.Parse(rc.url)
-	for k, v := range rc.query {
-		uri.Query().Add(k, v)
+	if len(rc.query) > 0 {
+		params := u.Values{}
+		for k, v := range rc.query {
+			params.Add(k, v)
+		}
+		uri.RawQuery = params.Encode()
 	}
 	return uri.String()
 }

@@ -25,7 +25,7 @@ func TestGetURL(t *testing.T) {
 
 func TestGetURLWithQuery(t *testing.T) {
 	cli := MakeClient(uri).Query("key", "value")
-	assert.Equal(t, "http://www.google.com?key=value", fmt.Sprintf("%s?key=value", cli.GetURL()))
+	assert.Equal(t, "http://www.google.com?key=value", cli.GetURL())
 }
 
 func TestGetAccept(t *testing.T) {
