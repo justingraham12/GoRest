@@ -108,9 +108,9 @@ func TestInvalidContentType(t *testing.T) {
 	defer server.Close()
 
 	_, err := MakeClient(server.URL).
-		Accept(ApplicationXML). // Set accept type XML
+		Accept(ApplicationXML). // Set accept type XML (this is what will be used to unmarshal the response)
 		Get(new(u.TestResponse1))
-	assert.NotNil(t, err, "Expected Error due to Accept type not matching Content-Type")
+	assert.NotNil(t, err, "Expected Error due to XML unable to unmarshal JSON")
 }
 
 func TestQuery(t *testing.T) {

@@ -16,7 +16,7 @@ This would build the url: `base_url/param_1/param_2?key=value`
     responseStruct = new(ResponseStruct)
     res, err := GoRest.MakeClient("base_url").Get(responseStruct)  
 This takes the response body and unmarshals it into the provided struct. JSON is set as the default unmarshaller but 
-can be changed by providing a new MediaType.
+can be changed by providing a new MediaType to the Accept() function.
 
     GoRest.MakeClient("base_url").Accept(GoRest.ApplicationXML)
 GoRest provides both XML and JSON unmarshalling. If you would like to customize how GoRest unmarshals or add a new type 
@@ -37,5 +37,3 @@ Then to use the new type you provide it to the Accept() function
 
     GoRest.MakeClient("base_url").Accept(ApplicationYAML)
     
-__NOTE:__ GoRest validates the Response "Content-Type" contains the Accept type. So in our example the "Content-Type"
- MUST contain "application/yaml"

@@ -2,7 +2,6 @@ package GoRest
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -178,19 +177,6 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
 	res, err := rc.client.Do(req)
 	if err != nil {
 		return res, err
-	}
-
-	return rc.response(res, resEntity...)
-}
-
-// Handles validating and reading the http response
-func (rc RestClient) response(res *http.Response, resEntity ...interface{}) (*http.Response, error) {
-	// Validate the response content type matches the accept type.
-	// This is required to allow unmarshalling to the resEntity
-	if contentType := res.Header.Get("Content-Type"); len(resEntity) != 0 &&
-		!strings.Contains(strings.ToLower(contentType), strings.ToLower(rc.accept.String())) {
-		return res, errors.New(fmt.Sprintf("Expected Response Content-Type [%s] to match/contain Request Accept [%s]",
-			contentType, rc.accept.String()))
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
