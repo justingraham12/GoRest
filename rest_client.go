@@ -198,9 +198,19 @@ func (rc RestClient) response(res *http.Response, resEntity ...interface{}) (*ht
 	}
 
 	// If entities were passed in then unmarshal the body into each
-	for _, e := range resEntity {
-		if err = rc.accept.Unmarshal(body, e); err != nil {
-			return res, err
+	if len(resEntity) != 0 {
+		errs := []string{}
+		success := false // If 1 entity is able to unmarshal consider it successful
+		for _, e := range resEntity {
+			if err = rc.accept.Unmarshal(body, e); err != nil {
+				errs = append(errs, err.Error())
+			} else {
+				success = true
+				break // Unmarshal was successful
+			}
+		}
+		if len(errs) != 0 && !success {
+			return res, fmt.Errorf("Error during unmarshal: %v", errs)
 		}
 	}
 
