@@ -56,7 +56,14 @@ func newClient(client *http.Client, url string, accept MediaType, contentType Me
 // ===================================================================
 
 func (rc RestClient) GetURL() string {
-	return rc.url
+	uri, err := u.Parse(rc.url)
+	if err != nil {
+		return err.Error()
+	}
+	for k, v := range rc.query {
+		uri.Query().Add(k, v)
+	}
+	return uri.String()
 }
 
 func (rc RestClient) GetAccept() MediaType {
