@@ -99,7 +99,7 @@ func (rc RestClient) Path(path ...string) RestClient {
 }
 
 func (rc RestClient) Query(key, value string) RestClient {
-	newQuery := make(map[string]string)
+	newQuery := make(map[string]string, len(rc.query) + 1)
 	for k, v := range rc.query {
 		newQuery[k] = v
 	}
@@ -145,8 +145,12 @@ func (rc RestClient) request(httpReq string, reqBody []byte, resEntity ...interf
 	}
 
 	// Add query params
-	for k, v := range rc.query {
-		uri.Query().Add(k, v)
+	if len(rc.query) > 0 {
+		params := u.Values{}
+		for k, v := range rc.query {
+			params.Add(k, v)
+		}
+		uri.RawQuery = params.Encode()
 	}
 
 	var req *http.Request

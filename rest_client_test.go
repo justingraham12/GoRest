@@ -83,3 +83,27 @@ func TestInvalidContentType(t *testing.T) {
 		Get(new(u.TestResponse))
 	assert.NotNil(t, err, "Expected Error due to Accept type not matching Content-Type")
 }
+
+func TestQuery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", ApplicationJSON.String())
+		if query := r.URL.Query(); query.Get("key") == "value" {
+			fmt.Fprintln(w, `{"name":"passed"}`)
+		} else {
+			fmt.Fprintln(w, `{"name":"failed"}`)
+		}
+	}))
+	defer server.Close()
+
+	response := new(u.TestResponse)
+	_, err := MakeClient(server.URL).
+		Accept(ApplicationJSON).
+		Query("key", "value").
+		Get(response)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, "passed", response.Name)
+}
