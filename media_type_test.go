@@ -53,3 +53,13 @@ func TestTextXMLUnmarshal(t *testing.T) {
 	TextXML.Unmarshal([]byte(`<Response><name>test</name></Response>`), entity)
 	assert.Equal(t, "test", entity.Name)
 }
+
+func TestNoContentString(t *testing.T) {
+	assert.Equal(t, "", NoContent.String())
+}
+
+func TestNoContentUnmarshal(t *testing.T) {
+	entity := new(u.TestResponse1)
+	err := NoContent.Unmarshal([]byte{}, entity)
+	assert.Nil(t, err)
+}
