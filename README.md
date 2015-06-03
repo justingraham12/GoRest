@@ -37,3 +37,5 @@ Then to use the new type you provide it to the Accept() function
 
     GoRest.MakeClient("base_url").Accept(ApplicationYAML)
     
+# TODO:
+- Auto marshal request using media_type set to ContentType
